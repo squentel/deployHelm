@@ -20,27 +20,28 @@ FALCON_API_BEARER_TOKEN=$(curl \
 --url "https://$FALCON_CLOUD_API/oauth2/token" | \
 python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])"
 )
-## get your CrowdStrike's regsitry password
+##Step 3 - get your CrowdStrike's regsitry password
 export FALCON_ART_PASSWORD=$(curl --silent -X GET -H "authorization: Bearer ${FALCON_API_BEARER_TOKEN}" \
 https://${FALCON_CLOUD_API}/container-security/entities/image-registry-credentials/v1 | \
 python3 -c "import sys, json; print(json.load(sys.stdin)['resources'][0]['token'])"
 )
 
-## format the username to login to crowdstrike registry
+## Step 4 - format the username to login to crowdstrike registry
 ## it's based on your CID - format fc-xxxxxxxxxxxxxxxxxxxxx
 export FALCON_ART_USERNAME="fc-$(echo $FALCON_CID | awk '{ print tolower($0) }' | cut -d'-' -f1)"
 
 
 ========== FIND LATEST SENSOR VERSION  ==========
 # note it requires jq to be installed
-
+#Step 5 - declare sensor type
 export SENSORTYPE=falcon-sensor  # falcon-sensor (DaemonSet)
-export SENSORTYPE=falcon-container  # falcon-sensor (DaemonSet)
 
-### Find the latest sensor version
+
+###Step 6 - Find the latest sensor version
 export REGISTRYBEARER=$(curl -X GET -s -u "${FALCON_ART_USERNAME}:${FALCON_ART_PASSWORD}" "https://registry.crowdstrike.com/v2/token?=${FALCON_ART_USERNAME}&scope=repository:$SENSORTYPE/$FALCON_CLOUD_REGION/release/falcon-sensor:pull&service=registry.crowdstrike.com" | jq -r '.token') && \
 export LATESTSENSOR=$(curl -X GET -s -H "authorization: Bearer ${REGISTRYBEARER}" "https://registry.crowdstrike.com/v2/${SENSORTYPE}/${FALCON_CLOUD_REGION}/release/falcon-sensor/tags/list" | jq -r '.tags[-1]')
 
+####Step 7 - get sensor version
 FALCON_IMAGE_REPO="registry.crowdstrike.com/${SENSORTYPE}/${FALCON_CLOUD_REGION}/release/falcon-sensor" && \
 FALCON_IMAGE_TAG=$LATESTSENSOR
 
@@ -58,10 +59,6 @@ docker tag $FALCON_IMAGE_REPO:$FALCON_IMAGE_TAG YOUR_REGISTRY:YOUR_TAG
 docker push YOUR_REGISTRY:YOUR_TAG
 
 
-========== FALCON SENSOR (DaemonSet) DEPLOYMENT  ==========
-
-Authentify your cluster in Client
-  az aks get-credentials --resource-group AKSRG --name AKSCWP3005
 
 ========== HELM DEPLOYMENT
 # Deploying DaemonSet with helm:
