@@ -79,6 +79,11 @@ helm upgrade --install falcon-helm crowdstrike/falcon-sensor -n falcon-system --
 --set node.image.tag="$FALCON_IMAGE_TAG" \
 --set node.image.registryConfigJSON="$FALCON_IMAGE_PULL_TOKEN"
 
+
+========== Review DEPLOYMENT  =========
+kubectl get pods -n falcon-system
+
+
 ========== K8s PROTECTION DEPLOYMENT  ==========
 #vim the config.yaml:
 crowdstrikeConfig:
