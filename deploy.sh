@@ -34,7 +34,7 @@ export FALCON_ART_USERNAME="fc-$(echo $FALCON_CID | awk '{ print tolower($0) }' 
 ========== FIND LATEST SENSOR VERSION  ==========
 # note it requires jq to be installed
 #Step 5 - declare sensor type
-export SENSORTYPE=falcon-sensor  # falcon-sensor (DaemonSet)
+export SENSORTYPE=falcon-sensor 
 
 
 ###Step 6 - Find the latest sensor version
@@ -45,21 +45,6 @@ export LATESTSENSOR=$(curl -X GET -s -H "authorization: Bearer ${REGISTRYBEARER}
 FALCON_IMAGE_REPO="registry.crowdstrike.com/${SENSORTYPE}/${FALCON_CLOUD_REGION}/release/falcon-sensor" && \
 FALCON_IMAGE_TAG=$LATESTSENSOR
 
-
-If you need to pull the image locally and pushing it to customer registry:
-========== PULL/PUSH SENSOR IMAGE (DAEMONSET OR SIDECAR) LOCALLY  ==========
-## Download the Falcon Image (DaemonSet OR Falcon Container and save it to your registry)
-### Pull image from Crowdstrike registry
-echo $FALCON_ART_PASSWORD | docker login -u $FALCON_ART_USERNAME --password-stdin registry.crowdstrike.com
-### Get sensor for DaemonSet
-docker pull $FALCON_IMAGE_REPO:$FALCON_IMAGE_TAG
-### Tag the image to point to your registry
-docker tag $FALCON_IMAGE_REPO:$FALCON_IMAGE_TAG YOUR_REGISTRY:YOUR_TAG
-### push the image to your registry
-docker push YOUR_REGISTRY:YOUR_TAG
-
-
-
 ========== HELM DEPLOYMENT
 # Deploying DaemonSet with helm:
 ## https://artifacthub.io/packages/helm/falcon-helm/falcon-sensor
@@ -69,7 +54,7 @@ export PARTIALPULLTOKEN=$(echo -n "$FALCON_ART_USERNAME:$FALCON_ART_PASSWORD" | 
 export FALCON_IMAGE_PULL_TOKEN=$( echo "{\"auths\": { \"registry.crowdstrike.com\": { \"auth\": \"$PARTIALPULLTOKEN\" } } }" | base64 -w 0)
 
 # Choose between kernel and eBPF
-export SENSOR_MODE="kernel" # "bpf" or "kernel"
+export SENSOR_MODE="kernel" 
 
 helm upgrade --install falcon-helm crowdstrike/falcon-sensor -n falcon-system --create-namespace \
 --set falcon.cid="$FALCON_CID" \
@@ -83,17 +68,3 @@ helm upgrade --install falcon-helm crowdstrike/falcon-sensor -n falcon-system --
 ========== Review DEPLOYMENT  =========
 kubectl get pods -n falcon-system
 
-
-========== K8s PROTECTION DEPLOYMENT  ==========
-#vim the config.yaml:
-crowdstrikeConfig:
-  clientID: ""
-  clientSecret: ""
-  clusterName: 
-  env: eu-1
-  cid: 
-  dockerAPIToken: 
-
-helm repo add kpagent-helm https://registry.crowdstrike.com/kpagent-helm && helm repo update
-helm upgrade --install -f config.yaml --create-namespace -n falcon-kubernetes-protection kpagent kpagent-helm/cs-k8s-protection-agent
-kubectl -n falcon-kubernetes-protection get pods
